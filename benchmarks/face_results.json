@@ -1,0 +1,42 @@
+{
+  "model": "opencv-haar-face",
+  "version": "opencv-haar-1",
+  "input": "BGR uint8 black frames",
+  "sizes": [
+    {
+      "width": 320,
+      "height": 240,
+      "warmup": 20,
+      "iterations": 100,
+      "mean_ms": 4.021656000022631,
+      "p50_ms": 4.002830999979778,
+      "p95_ms": 4.46487099998194,
+      "p99_ms": 4.595455000071524,
+      "throughput_fps": 248.65378838825916
+    },
+    {
+      "width": 640,
+      "height": 480,
+      "warmup": 20,
+      "iterations": 100,
+      "mean_ms": 12.47085837999748,
+      "p50_ms": 12.435217000074772,
+      "p95_ms": 13.017534000027808,
+      "p99_ms": 13.327921999916725,
+      "throughput_fps": 80.18694219188158
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "warmup": 20,
+      "iterations": 100,
+      "mean_ms": 31.3767791100463,
+      "p50_ms": 31.271471000309248,
+      "p95_ms": 32.46036000018648,
+      "p99_ms": 33.319167000172456,
+      "throughput_fps": 31.870702741436496
+    }
+  ],
+  "python": "3.12.3",
+  "accuracy_claimed": false
+}

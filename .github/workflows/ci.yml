@@ -1,0 +1,55 @@
+name: proctorstream-ci
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: proctor
+          POSTGRES_PASSWORD: proctor
+          POSTGRES_DB: proctorstream
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U proctor -d proctorstream"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      minio:
+        image: minio/minio:latest
+        env:
+          MINIO_ROOT_USER: minioadmin
+          MINIO_ROOT_PASSWORD: minioadmin
+        ports: ['9000:9000', '9001:9001']
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/minio/health/live"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        command: server /data --console-address ":9001"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install -e '.[test,models]'
+      - name: Run unit and service integration tests
+        env:
+          PROCTORSTREAM_DB_URL: sqlite:///./data/ci.db
+          PROCTORSTREAM_TEST_POSTGRES_URL: postgresql+psycopg://proctor:proctor@127.0.0.1:5432/proctorstream
+          PROCTORSTREAM_TEST_REDIS_URL: redis://127.0.0.1:6379/0
+          PROCTORSTREAM_TEST_MINIO_ENDPOINT: http://127.0.0.1:9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+        run: pytest -q
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: cd frontend && npm ci && npm run build
+      - run: cd frontend && npx playwright install --with-deps chromium && npm run test:e2e
+      - run: python -c "import yaml; yaml.safe_load(open('docker-compose.yml'))"
+      - name: Compose config validation
+        run: docker compose config
+      - name: CPU face inference smoke benchmark
+        run: python benchmarks/run_face_benchmarks.py
